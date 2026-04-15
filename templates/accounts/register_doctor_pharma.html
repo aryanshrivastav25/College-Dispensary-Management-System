@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Register — CampusCare{% endblock %}
+
+{% block content %}
+  <section class="auth-page" aria-labelledby="register-heading">
+    <h2 id="register-heading">Register</h2>
+    <p>Create your CampusCare account and choose the role you need today.</p>
+    <form method="post">
+      {% csrf_token %}
+      {{ form|crispy }}
+      <button type="submit">Create account</button>
+    </form>
+    
+  </section>
+{% endblock %}

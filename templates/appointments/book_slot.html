@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Book Slot — CampusCare{% endblock %}
+
+{% block content %}
+  <section class="booking-page" aria-labelledby="book-slot-heading">
+    <header class="booking-page__header">
+      <div>
+        <p class="booking-page__eyebrow">Slot confirmation</p>
+        <h2 id="book-slot-heading">Book appointment slot</h2>
+        <p>Confirm this slot to generate your QR-backed queue token.</p>
+      </div>
+      <a class="booking-page__back" href="{% url 'appointments:slot_list' %}">Back to slots</a>
+    </header>
+
+    <div class="booking-page__layout">
+      <section class="booking-page__panel">
+        <h3>{{ slot.title|escape }}</h3>
+        <dl class="booking-page__meta">
+          <dt>Date</dt>
+          <dd>{{ slot.date|date:"D, d M Y"|escape }}</dd>
+          <dt>Time</dt>
+          <dd>{{ slot.start_time|time:"g:i A"|escape }} to {{ slot.end_time|time:"g:i A"|escape }}</dd>
+          <dt>Remaining capacity</dt>
+          <dd>{{ slot.remaining_capacity }} of {{ slot.max_capacity }}</dd>
+          {% if slot.notes %}
+            <dt>Notes</dt>
+            <dd>{{ slot.notes|escape }}</dd>
+          {% endif %}
+        </dl>
+        <p class="booking-page__hint">{{ booking_note|escape }}</p>
+      </section>
+
+      <section class="booking-page__panel">
+        <form method="post">
+          {% csrf_token %}
+          {{ form|crispy }}
+          <button type="submit">Generate token</button>
+        </form>
+      </section>
+    </div>
+  </section>
+{% endblock %}

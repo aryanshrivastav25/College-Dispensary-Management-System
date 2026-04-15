@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Edit Slot — CampusCare{% endblock %}
+
+{% block content %}
+  <section class="booking-page" aria-labelledby="slot-form-heading">
+    <header class="booking-page__header">
+      <div>
+        <p class="booking-page__eyebrow">Appointments admin</p>
+        <h2 id="slot-form-heading">{{ page_heading|escape }}</h2>
+        <p>{{ page_summary|escape }}</p>
+      </div>
+      <a class="booking-page__back" href="{% url 'appointments:slot_list' %}">Back to appointments</a>
+    </header>
+
+    <article class="booking-page__panel">
+      <h3>{{ slot.title|escape }}</h3>
+      <form method="post">
+        {% csrf_token %}
+        {{ form|crispy }}
+        <button type="submit">Save changes</button>
+      </form>
+    </article>
+  </section>
+{% endblock %}

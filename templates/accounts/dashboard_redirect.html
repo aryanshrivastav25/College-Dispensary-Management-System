@@ -1,0 +1,452 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard — CampusCare{% endblock %}
+
+{% block content %}
+  <section class="dashboard-page dashboard-shell" aria-labelledby="dashboard-heading">
+    <header class="dashboard-shell__header">
+      <div>
+        <p class="dashboard-shell__eyebrow">{{ profile.get_role_display|escape }} workspace</p>
+        <h2 id="dashboard-heading">{{ request.user.get_full_name|default:request.user.username|escape }}</h2>
+          {% if dashboard_role == 'student' %}
+          <p>Track your token, monitor queue movement, and review medicine instructions from recent prescriptions.</p>
+        {% elif dashboard_role == 'doctor' %}
+          <p>Watch the live consultation queue, check your availability, and continue recent patient care quickly.</p>
+        {% elif dashboard_role == 'pharmacist' %}
+          <p>Stay on top of pending handoffs, low-stock risk, and the medicines you dispensed most recently.</p>
+        {% else %}
+          <p>Monitor the dispensary across queue load, staffing, pharmacy throughput, and inventory risk in one place.</p>
+        {% endif %}
+      </div>
+      <dl class="dashboard-shell__identity">
+        <dt>Role</dt>
+        <dd>{{ profile.get_role_display|escape }}</dd>
+        {% if profile.roll_number %}
+          <dt>Roll number</dt>
+          <dd>{{ profile.roll_number|escape }}</dd>
+        {% endif %}
+        {% if profile.phone %}
+          <dt>Phone</dt>
+          <dd>{{ profile.phone|escape }}</dd>
+        {% endif %}
+      </dl>
+    </header>
+
+    {% if dashboard_role == 'student' %}
+      <div class="dashboard-shell__metrics">
+        {% for metric in student_dashboard.metrics %}
+          <article class="dashboard-metric">
+            <span class="dashboard-metric__label">{{ metric.label|escape }}</span>
+            <strong class="dashboard-metric__value">{{ metric.value|escape }}</strong>
+          </article>
+        {% endfor %}
+      </div>
+
+      <div class="dashboard-grid dashboard-grid--student">
+        <article class="dashboard-card dashboard-card--wide">
+          <div class="dashboard-card__top">
+            <div>
+              <p class="dashboard-card__eyebrow">Current token</p>
+              <h3>Live queue status</h3>
+            </div>
+            <a class="dashboard-card__action" href="{% url 'appointments:my_token' %}">Open token page</a>
+          </div>
+          {% if student_dashboard.active_token %}
+            <div
+              class="dashboard-live-queue"
+              data-queue-root
+              data-endpoint="{{ queue_endpoint|escape }}"
+              data-poll-interval="{{ queue_poll_interval_ms }}"
+              data-avg-consult-minutes="{{ avg_consult_minutes }}"
+            >
+              <dl class="dashboard-detail-list">
+                <dt>Token code</dt>
+                <dd>{{ student_dashboard.active_token.token_code|escape }}</dd>
+                <dt>Slot</dt>
+                <dd>{{ student_dashboard.active_token.slot.title|escape }}</dd>
+                <dt>Status</dt>
+                <dd id="token-status">{{ student_dashboard.token_eta.status_label|escape }}</dd>
+                <dt>Queue position</dt>
+                <dd id="queue-position">{{ student_dashboard.token_eta.queue_position }}</dd>
+                <dt>Students ahead</dt>
+                <dd id="waiting-ahead">{{ student_dashboard.token_eta.waiting_ahead }}</dd>
+                <dt>ETA</dt>
+                <dd><span id="queue-eta">{{ student_dashboard.token_eta.estimated_minutes }}</span> minutes</dd>
+              </dl>
+            </div>
+          {% else %}
+            <p class="dashboard-card__empty">No active token right now. Book a slot to start live queue tracking.</p>
+          {% endif %}
+        </article>
+
+        <article class="dashboard-card">
+          <div class="dashboard-card__top">
+            <div>
+              <p class="dashboard-card__eyebrow">Medicine quota</p>
+              <h3>Monthly usage</h3>
+            </div>
+            <a class="dashboard-card__action" href="{% url 'analytics:history' %}">Open history</a>
+          </div>
+          <dl class="dashboard-detail-list">
+            <dt>Used this month</dt>
+            <dd>{{ student_dashboard.quota.used_quota }}</dd>
+            <dt>Remaining</dt>
+            <dd>{{ student_dashboard.quota.remaining_quota }}</dd>
+            <dt>Limit</dt>
+            <dd>{{ student_dashboard.quota.monthly_limit }}</dd>
+          </dl>
+        </article>
+
+        <article class="dashboard-card">
+          <div class="dashboard-card__top">
+            <div>
+              <p class="dashboard-card__eyebrow">Upcoming slots</p>
+              <h3>Next booking windows</h3>
+            </div>
+            <a class="dashboard-card__action" href="{% url 'appointments:slot_list' %}">Browse appointments</a>
+          </div>
+          <div class="dashboard-stack">
+            {% for item in student_dashboard.upcoming_slots %}
+              <article class="dashboard-list-card">
+                <strong>{{ item.slot.title|escape }}</strong>
+                <p>{{ item.slot.date|date:"D, d M Y"|escape }} · {{ item.slot.start_time|time:"g:i A"|escape }}</p>
+                <p>{{ item.booking_note|escape }}</p>
+              </article>
+            {% empty %}
+              <p class="dashboard-card__empty">No upcoming slots are available yet.</p>
+            {% endfor %}
+          </div>
+        </article>
+
+        <article class="dashboard-card dashboard-card--wide">
+          <div class="dashboard-card__top">
+            <div>
+              <p class="dashboard-card__eyebrow">Prescription history</p>
+              <h3>Recent medicines and dosages</h3>
+            </div>
+            <a class="dashboard-card__action" href="{% url 'analytics:history' %}">View full timeline</a>
+          </div>
+          <div class="dashboard-stack">
+            {% for record in student_dashboard.medicine_history %}
+              <article class="dashboard-history-card">
+                <div class="dashboard-history-card__top">
+                  <strong>{{ record.dispensed_at|date:"d M Y, g:i A"|escape }}</strong>
+                  <span>Dr. {{ record.prescription.doctor.user.get_full_name|default:record.prescription.doctor.user.username|escape }}</span>
+                </div>
+                <ul class="dashboard-inline-list">
+                  {% for medicine in record.prescription.medicines.all %}
+                    <li>
+                      <strong>{{ medicine.medicine_name|escape }}</strong>
+                      <span>{{ medicine.quantity }} units</span>
+                      <span>{{ medicine.dosage_instructions|escape }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </article>
+            {% empty %}
+              <p class="dashboard-card__empty">No dispensed medicine history is available yet.</p>
+            {% endfor %}
+          </div>
+        </article>
+      </div>
+    {% elif dashboard_role == 'doctor' %}
+      <div class="dashboard-shell__metrics">
+        {% for metric in doctor_dashboard.metrics %}
+          <article class="dashboard-metric">
+            <span class="dashboard-metric__label">{{ metric.label|escape }}</span>
+            <strong class="dashboard-metric__value">{{ metric.value|escape }}</strong>
+          </article>
+        {% endfor %}
+      </div>
+
+      <div class="dashboard-grid">
+        <article class="dashboard-card">
+          <div class="dashboard-card__top">
+            <div>
+              <p class="dashboard-card__eyebrow">Consultation queue</p>
+              <h3>Waiting patients</h3>
+            </div>
+            <a class="dashboard-card__action" href="{% url 'consultation:doctor_list' %}">Open consultation</a>
+          </div>
+          <div class="dashboard-stack">
+            {% for token in doctor_dashboard.waiting_tokens %}
+              <article class="dashboard-list-card">
+                <strong>{{ token.student.user.get_full_name|default:token.student.user.username|escape }}</strong>
+                <p>{{ token.slot.title|escape }} · {{ token.slot.date|date:"d M Y"|escape }}</p>
+                <p>Token {{ token.token_code|escape }}</p>
+              </article>
+            {% empty %}
+              <p class="dashboard-card__empty">No patients are waiting right now.</p>
+            {% endfor %}
+          </div>
+        </article>
+
+        <article class="dashboard-card">
+          <div class="dashboard-card__top">
+            <div>
+              <p class="dashboard-card__eyebrow">Availability</p>
+              <h3>Doctor profile</h3>
+            </div>
+            <a class="dashboard-card__action" href="{% url 'consultation:doctor_list' %}">Manage status</a>
+          </div>
+          <dl class="dashboard-detail-list">
+            <dt>Specialization</dt>
+            <dd>{{ doctor_dashboard.doctor_profile.specialization|escape }}</dd>
+            <dt>Status</dt>
+            <dd>{{ doctor_dashboard.metrics.0.value|escape }}</dd>
+          </dl>
+        </article>
+
+        <article class="dashboard-card dashboard-card--wide">
+          <div class="dashboard-card__top">
+            <div>
+              <p class="dashboard-card__eyebrow">Recent prescriptions</p>
+              <h3>Latest consultations</h3>
+            </div>
+            <a class="dashboard-card__action" href="{% url 'consultation:doctor_list' %}">Continue care</a>
+          </div>
+          <div class="dashboard-stack">
+            {% for prescription in doctor_dashboard.recent_prescriptions %}
+              <article class="dashboard-history-card">
+                <div class="dashboard-history-card__top">
+                  <strong>{{ prescription.token.student.user.get_full_name|default:prescription.token.student.user.username|escape }}</strong>
+                  <span>{{ prescription.created_at|date:"d M Y, g:i A"|escape }}</span>
+                </div>
+                <p>{{ prescription.symptoms|escape }}</p>
+                <ul class="dashboard-inline-list">
+                  {% for medicine in prescription.medicines.all %}
+                    <li>
+                      <strong>{{ medicine.medicine_name|escape }}</strong>
+                      <span>{{ medicine.quantity }} units</span>
+                      <span>{{ medicine.dosage_instructions|escape }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </article>
+            {% empty %}
+              <p class="dashboard-card__empty">No prescriptions have been written yet.</p>
+            {% endfor %}
+          </div>
+        </article>
+      </div>
+    {% elif dashboard_role == 'pharmacist' %}
+      <div class="dashboard-shell__metrics">
+        {% for metric in pharmacist_dashboard.metrics %}
+          <article class="dashboard-metric">
+            <span class="dashboard-metric__label">{{ metric.label|escape }}</span>
+            <strong class="dashboard-metric__value">{{ metric.value|escape }}</strong>
+          </article>
+        {% endfor %}
+      </div>
+
+      <div class="dashboard-grid">
+        <article class="dashboard-card">
+          <div class="dashboard-card__top">
+            <div>
+              <p class="dashboard-card__eyebrow">Pending queue</p>
+              <h3>Ready to dispense</h3>
+            </div>
+            <a class="dashboard-card__action" href="{% url 'pharmacy:queue' %}">Open queue</a>
+          </div>
+          <div class="dashboard-stack">
+            {% for prescription in pharmacist_dashboard.pending_prescriptions %}
+              <article class="dashboard-list-card">
+                <strong>{{ prescription.token.student.user.get_full_name|default:prescription.token.student.user.username|escape }}</strong>
+                <p>Dr. {{ prescription.doctor.user.get_full_name|default:prescription.doctor.user.username|escape }}</p>
+                <ul class="dashboard-inline-list">
+                  {% for medicine in prescription.medicines.all %}
+                    <li>
+                      <strong>{{ medicine.medicine_name|escape }}</strong>
+                      <span>{{ medicine.quantity }} units</span>
+                      <span>{{ medicine.dosage_instructions|escape }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </article>
+            {% empty %}
+              <p class="dashboard-card__empty">No pending prescriptions are waiting for pharmacy handoff.</p>
+            {% endfor %}
+          </div>
+        </article>
+
+        <article class="dashboard-card">
+          <div class="dashboard-card__top">
+            <div>
+              <p class="dashboard-card__eyebrow">Inventory risk</p>
+              <h3>Low-stock watch</h3>
+            </div>
+            <a class="dashboard-card__action" href="{% url 'inventory:alerts' %}">Open alerts</a>
+          </div>
+          <div class="dashboard-stack">
+            {% for stock in pharmacist_dashboard.low_stock_items %}
+              <article class="dashboard-list-card">
+                <strong>{{ stock.medicine.name|escape }}</strong>
+                <p>{{ stock.quantity }} {{ stock.medicine.get_unit_display|escape }} remaining</p>
+                <p>Season: {{ stock.get_season_tag_display|escape }}</p>
+              </article>
+            {% empty %}
+              <p class="dashboard-card__empty">No low-stock items need attention right now.</p>
+            {% endfor %}
+          </div>
+        </article>
+
+        <article class="dashboard-card dashboard-card--wide">
+          <div class="dashboard-card__top">
+            <div>
+              <p class="dashboard-card__eyebrow">Recent handoffs</p>
+              <h3>Latest dispense activity</h3>
+            </div>
+            <a class="dashboard-card__action" href="{% url 'inventory:list' %}">Manage stock</a>
+          </div>
+          <div class="dashboard-stack">
+            {% for record in pharmacist_dashboard.recent_dispense_records %}
+              <article class="dashboard-history-card">
+                <div class="dashboard-history-card__top">
+                  <strong>{{ record.prescription.token.student.user.get_full_name|default:record.prescription.token.student.user.username|escape }}</strong>
+                  <span>{{ record.dispensed_at|date:"d M Y, g:i A"|escape }}</span>
+                </div>
+                <ul class="dashboard-inline-list">
+                  {% for medicine in record.prescription.medicines.all %}
+                    <li>
+                      <strong>{{ medicine.medicine_name|escape }}</strong>
+                      <span>{{ medicine.quantity }} units</span>
+                      <span>{{ medicine.dosage_instructions|escape }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </article>
+            {% empty %}
+              <p class="dashboard-card__empty">No medicines have been dispensed from this account yet.</p>
+            {% endfor %}
+          </div>
+        </article>
+      </div>
+    {% else %}
+      <div class="dashboard-shell__metrics">
+        {% for metric in admin_dashboard.metrics %}
+          <article class="dashboard-metric">
+            <span class="dashboard-metric__label">{{ metric.label|escape }}</span>
+            <strong class="dashboard-metric__value">{{ metric.value|escape }}</strong>
+          </article>
+        {% endfor %}
+      </div>
+
+      <div class="dashboard-grid">
+        <article class="dashboard-card">
+          <div class="dashboard-card__top">
+            <div>
+              <p class="dashboard-card__eyebrow">Staffing</p>
+              <h3>Available doctors</h3>
+            </div>
+            <a class="dashboard-card__action" href="{% url 'consultation:doctor_list' %}">Open consultation</a>
+          </div>
+          <div class="dashboard-stack">
+            {% for doctor in admin_dashboard.available_doctors %}
+              <article class="dashboard-list-card">
+                <strong>Dr. {{ doctor.user.get_full_name|default:doctor.user.username|escape }}</strong>
+                <p>{{ doctor.specialization|escape }}</p>
+                <p>{% if doctor.is_available %}Available{% else %}Unavailable{% endif %}</p>
+              </article>
+            {% empty %}
+              <p class="dashboard-card__empty">No doctor profiles are currently available.</p>
+            {% endfor %}
+          </div>
+        </article>
+
+        <article class="dashboard-card">
+          <div class="dashboard-card__top">
+            <div>
+              <p class="dashboard-card__eyebrow">Inventory watch</p>
+              <h3>Low-stock items</h3>
+            </div>
+            <a class="dashboard-card__action" href="{% url 'inventory:alerts' %}">View alerts</a>
+          </div>
+          <div class="dashboard-stack">
+            {% for stock in admin_dashboard.low_stock_items %}
+              <article class="dashboard-list-card">
+                <strong>{{ stock.medicine.name|escape }}</strong>
+                <p>{{ stock.quantity }} {{ stock.medicine.get_unit_display|escape }} remaining</p>
+              </article>
+            {% empty %}
+              <p class="dashboard-card__empty">Inventory is healthy right now.</p>
+            {% endfor %}
+          </div>
+        </article>
+
+        <article class="dashboard-card">
+          <div class="dashboard-card__top">
+            <div>
+              <p class="dashboard-card__eyebrow">Pharmacy queue</p>
+              <h3>Pending prescriptions</h3>
+            </div>
+            <a class="dashboard-card__action" href="{% url 'pharmacy:queue' %}">Open pharmacy</a>
+          </div>
+          <div class="dashboard-stack">
+            {% for prescription in admin_dashboard.pending_prescriptions %}
+              <article class="dashboard-list-card">
+                <strong>{{ prescription.token.student.user.get_full_name|default:prescription.token.student.user.username|escape }}</strong>
+                <p>Dr. {{ prescription.doctor.user.get_full_name|default:prescription.doctor.user.username|escape }}</p>
+                <ul class="dashboard-inline-list">
+                  {% for medicine in prescription.medicines.all %}
+                    <li>
+                      <strong>{{ medicine.medicine_name|escape }}</strong>
+                      <span>{{ medicine.quantity }} units</span>
+                      <span>{{ medicine.dosage_instructions|escape }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </article>
+            {% empty %}
+              <p class="dashboard-card__empty">No pharmacy backlog at the moment.</p>
+            {% endfor %}
+          </div>
+        </article>
+
+        <article class="dashboard-card dashboard-card--wide">
+          <div class="dashboard-card__top">
+            <div>
+              <p class="dashboard-card__eyebrow">Recent receipts</p>
+              <h3>Latest dispensing activity</h3>
+            </div>
+          </div>
+          <div class="dashboard-stack">
+            {% for record in admin_dashboard.recent_dispense_records %}
+              <article class="dashboard-history-card">
+                <div class="dashboard-history-card__top">
+                  <strong>{{ record.prescription.token.student.user.get_full_name|default:record.prescription.token.student.user.username|escape }}</strong>
+                  <span>{{ record.dispensed_at|date:"d M Y, g:i A"|escape }}</span>
+                </div>
+                <p>Handled by {{ record.pharmacist.user.get_full_name|default:record.pharmacist.user.username|escape }}</p>
+                <ul class="dashboard-inline-list">
+                  {% for medicine in record.prescription.medicines.all %}
+                    <li>
+                      <strong>{{ medicine.medicine_name|escape }}</strong>
+                      <span>{{ medicine.quantity }} units</span>
+                      <span>{{ medicine.dosage_instructions|escape }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </article>
+            {% empty %}
+              <p class="dashboard-card__empty">No dispense records are available yet.</p>
+            {% endfor %}
+          </div>
+        </article>
+      </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'accounts:logout' %}" class="dashboard-shell__logout">
+      {% csrf_token %}
+      <button type="submit">Logout</button>
+    </form>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  {% if dashboard_role == 'student' %}
+    {% if student_dashboard.active_token %}
+      <script src="{% static 'js/queue_poll.js' %}"></script>
+    {% endif %}
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}{% if show_eta_panel %}Queue ETA{% else %}Medicine History{% endif %} — CampusCare{% endblock %}
+
+{% block content %}
+  <section class="analytics-page" aria-labelledby="history-heading">
+    <header class="analytics-page__header">
+      <div>
+        <p class="analytics-page__eyebrow">Analytics</p>
+        <h2 id="history-heading">{% if show_eta_panel %}Queue ETA{% else %}Medicine history{% endif %}</h2>
+        <p>Review your live queue status and look back at medicines that were dispensed through the campus dispensary.</p>
+      </div>
+      <div class="analytics-page__actions">
+        <a href="{% url 'analytics:triage' %}">Symptom triage</a>
+        <a href="{% url 'analytics:history' %}">Full history</a>
+      </div>
+    </header>
+
+    {% if show_eta_panel %}
+      <section class="analytics-page__panel analytics-page__panel--highlight">
+        <h3>Current queue estimate</h3>
+        {% if eta and active_token %}
+          <p><strong>Status:</strong> {{ eta.status_label|escape }}</p>
+          <p><strong>People ahead:</strong> {{ eta.waiting_ahead }}</p>
+          <p><strong>Estimated wait:</strong> {{ eta.estimated_minutes }} minutes</p>
+          <p><strong>Token:</strong> {{ active_token.token_code }}</p>
+        {% else %}
+          <p>You do not have an active queue token right now.</p>
+        {% endif %}
+      </section>
+    {% endif %}
+
+    <section class="analytics-page__panel">
+      <h3>Dispense timeline</h3>
+      {% if history_records %}
+        <div class="analytics-timeline">
+          {% for record in history_records %}
+            <article class="analytics-timeline__item">
+              <div class="analytics-timeline__meta">
+                <strong>{{ record.dispensed_at|date:"d M Y, g:i A"|escape }}</strong>
+                <span>Receipt {{ record.receipt_code }}</span>
+              </div>
+              <p>Doctor: {{ record.prescription.doctor.user.get_full_name|default:record.prescription.doctor.user.username|escape }}</p>
+              <ul>
+                {% for medicine in record.prescription.medicines.all %}
+                  <li>{{ medicine.medicine_name|escape }} - {{ medicine.dosage_instructions|escape }} - Qty {{ medicine.quantity }}</li>
+                {% endfor %}
+              </ul>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p>No dispensed medicine records are available yet.</p>
+      {% endif %}
+    </section>
+  </section>
+{% endblock %}

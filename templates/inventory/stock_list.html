@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory — CampusCare{% endblock %}
+
+{% block content %}
+  <section class="inventory-page" aria-labelledby="inventory-heading">
+    <header class="inventory-page__header">
+      <div>
+        <p class="inventory-page__eyebrow">Inventory</p>
+        <h2 id="inventory-heading">{% if alerts_only %}Low-stock alerts{% else %}Stock catalog{% endif %}</h2>
+        <p>Track medicine availability and review replenishment needs before the queue is affected.</p>
+      </div>
+      <div class="inventory-page__actions">
+        <a href="{% url 'inventory:list' %}">Full catalog</a>
+        <a href="{% url 'inventory:alerts' %}">Alerts only</a>
+        <a href="{% url 'inventory:add' %}">Add stock item</a>
+      </div>
+    </header>
+
+    <section class="inventory-alerts">
+      <div class="inventory-alerts__card">
+        <h3>Low-stock widget</h3>
+        <p>{{ low_stock_stocks|length }} item{{ low_stock_stocks|length|pluralize }} at or below {{ low_stock_threshold }} units.</p>
+      </div>
+      {% if low_stock_stocks %}
+        <div class="inventory-alerts__list">
+          {% for stock in low_stock_stocks %}
+            <article class="inventory-alerts__item">
+              <strong>{{ stock.medicine.name|escape }}</strong>
+              <span>{{ stock.quantity }} {{ stock.medicine.get_unit_display|lower|escape }} remaining</span>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="inventory-alerts__empty">No low-stock warnings right now.</p>
+      {% endif %}
+    </section>
+
+    <section class="inventory-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Medicine</th>
+            <th>Category</th>
+            <th>Unit</th>
+            <th>Season tag</th>
+            <th>Quantity</th>
+            <th>Updated</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for stock in stocks %}
+            <tr>
+              <td>{{ stock.medicine.name|escape }}</td>
+              <td>{{ stock.medicine.get_category_display|escape }}</td>
+              <td>{{ stock.medicine.get_unit_display|escape }}</td>
+              <td>{{ stock.get_season_tag_display|escape }}</td>
+              <td>
+                <span class="{% if stock.quantity <= low_stock_threshold %}inventory-table__quantity inventory-table__quantity--low{% else %}inventory-table__quantity{% endif %}">
+                  {{ stock.quantity }}
+                </span>
+              </td>
+              <td>{{ stock.updated_at|date:"d M Y"|escape }}</td>
+              <td><a href="{% url 'inventory:edit' stock.pk %}">Edit</a></td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7">No inventory items are available yet.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </section>
+{% endblock %}

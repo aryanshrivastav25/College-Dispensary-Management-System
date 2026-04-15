@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags static %}
+
+{% block title %}Prescription — CampusCare{% endblock %}
+
+{% block content %}
+  <section class="prescription-page" aria-labelledby="prescription-heading">
+    <header class="prescription-page__header">
+      <div>
+        <p class="prescription-page__eyebrow">Doctor workspace</p>
+        <h2 id="prescription-heading">Create prescription</h2>
+        <p>Record symptoms and prescribed medicines for this consultation token.</p>
+      </div>
+      <a class="prescription-page__back" href="{% url 'consultation:doctor_list' %}">Back to doctors</a>
+    </header>
+
+    <div class="prescription-page__token">
+      <h3>{{ token.student.user.get_full_name|default:token.student.user.username|escape }}</h3>
+      <p>{{ token.slot.title|escape }} on {{ token.slot.date|date:"d M Y"|escape }}</p>
+      <p>Doctor: {{ doctor_profile.user.get_full_name|default:doctor_profile.user.username|escape }}</p>
+    </div>
+
+    <form method="post" class="prescription-page__form">
+      {% csrf_token %}
+      <section class="prescription-page__panel">
+        {{ prescription_form|crispy }}
+      </section>
+
+      <section class="prescription-page__panel">
+        <div class="prescription-page__panel-top">
+          <h3>Medicines</h3>
+          <button type="button" class="prescription-page__add" data-add-row>Add medicine row</button>
+        </div>
+
+        {{ medicine_formset.management_form }}
+        <div data-formset-container>
+          {% for form in medicine_formset %}
+            <article class="medicine-row" data-formset-row>
+              <div class="medicine-row__grid">
+                <div>
+                  <label for="{{ form.medicine_name.id_for_label }}">Medicine name</label>
+                  {{ form.medicine_name }}
+                </div>
+                <div>
+                  <label for="{{ form.quantity.id_for_label }}">Quantity</label>
+                  {{ form.quantity }}
+                </div>
+                <div class="medicine-row__full">
+                  <label for="{{ form.dosage_instructions.id_for_label }}">Dosage instructions</label>
+                  {{ form.dosage_instructions }}
+                </div>
+              </div>
+              {% if medicine_formset.can_delete %}
+                <label class="medicine-row__delete">{{ form.DELETE }} Remove this medicine</label>
+              {% endif %}
+            </article>
+          {% endfor %}
+        </div>
+
+        <template id="medicine-empty-form-template">
+          <article class="medicine-row" data-formset-row>
+            <div class="medicine-row__grid">
+              <div>
+                <label>Medicine name</label>
+                {{ medicine_formset.empty_form.medicine_name }}
+              
+              </div>
+              <div>
+                <label for="id_medicines-__prefix__-quantity">Quantity</label>
+                <input type="number" name="medicines-__prefix__-quantity" id="id_medicines-__prefix__-quantity" min="1">
+              </div>
+              <div class="medicine-row__full">
+                <label for="id_medicines-__prefix__-dosage_instructions">Dosage instructions</label>
+                <input type="text" name="medicines-__prefix__-dosage_instructions" id="id_medicines-__prefix__-dosage_instructions" maxlength="255">
+              </div>
+            </div>
+            <label class="medicine-row__delete">
+              <input type="checkbox" name="medicines-__prefix__-DELETE" id="id_medicines-__prefix__-DELETE">
+              Remove this medicine
+            </label>
+          </article>
+        </template>
+      </section>
+
+      <button type="submit">Save prescription</button>
+    </form>
+  </section>
+
+  <script src="{% static 'js/prescription_rows.js' %}"></script>
+{% endblock %}

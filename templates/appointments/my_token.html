@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}My Token — CampusCare{% endblock %}
+
+{% block content %}
+  <section class="token-page" aria-labelledby="token-heading">
+    <header class="token-page__header">
+      <div>
+        <p class="token-page__eyebrow">Queue tracking</p>
+        <h2 id="token-heading">My appointment token</h2>
+        <p>Keep this QR ready when you arrive at the dispensary.</p>
+      </div>
+      <a class="token-page__back" href="{% url 'appointments:slot_list' %}">Browse slots</a>
+    </header>
+
+    {% if token %}
+      <div class="token-page__layout">
+        <section class="token-page__panel token-page__panel--qr">
+          <img class="token-page__qr" src="data:image/png;base64,{{ token.qr_image|escape }}" alt="QR code for token {{ token.token_code|escape }}">
+          <p class="token-page__code">{{ token.token_code|escape }}</p>
+          <p class="token-page__status">Status: <strong id="token-status">{{ token.get_status_display|escape }}</strong></p>
+        </section>
+
+        <section class="token-page__panel">
+          <h3>{{ token.slot.title|escape }}</h3>
+          <dl class="token-page__meta">
+            <dt>Date</dt>
+            <dd>{{ token.slot.date|date:"D, d M Y"|escape }}</dd>
+            <dt>Time</dt>
+            <dd>{{ token.slot.start_time|time:"g:i A"|escape }} to {{ token.slot.end_time|time:"g:i A"|escape }}</dd>
+            <dt>Expires</dt>
+            <dd>{{ token.expires_at|date:"d M Y, g:i A"|escape }}</dd>
+          </dl>
+
+          <div
+            class="token-page__queue"
+            data-queue-root
+            data-endpoint="{% url 'appointments:queue_count' token.pk %}"
+            data-poll-interval="{{ queue_poll_interval_ms }}"
+          >
+            <article class="token-page__queue-card">
+              <span class="token-page__queue-label">Queue position</span>
+              <strong id="queue-position">{{ queue_snapshot.queue_position }}</strong>
+            </article>
+            <article class="token-page__queue-card">
+              <span class="token-page__queue-label">Waiting ahead</span>
+              <strong id="waiting-ahead">{{ queue_snapshot.waiting_ahead }}</strong>
+            </article>
+          </div>
+        </section>
+      </div>
+    {% else %}
+      <article class="appointments-page__notice">
+        <h3>No active token</h3>
+        <p>You do not have a current appointment token. Book a slot to generate one.</p>
+        <a href="{% url 'appointments:slot_list' %}">Book a slot</a>
+      </article>
+    {% endif %}
+  </section>
+
+  {% if token %}
+    <script src="{% static 'js/queue_poll.js' %}"></script>
+  {% endif %}
+{% endblock %}

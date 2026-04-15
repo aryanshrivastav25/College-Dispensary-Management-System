@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Triage — CampusCare{% endblock %}
+
+{% block content %}
+  <section class="analytics-page" aria-labelledby="triage-heading">
+    <header class="analytics-page__header">
+      <div>
+        <p class="analytics-page__eyebrow">Analytics</p>
+        <h2 id="triage-heading">Symptom triage</h2>
+        <p>Describe how you feel and get a local rule-based recommendation for the most suitable consultation path.</p>
+      </div>
+      <div class="analytics-page__actions">
+        <a href="{% url 'analytics:eta' %}">Queue ETA</a>
+        <a href="{% url 'analytics:history' %}">Medicine history</a>
+      </div>
+    </header>
+
+    <div class="analytics-page__layout">
+      <section class="analytics-page__panel">
+        <h3>Describe your symptoms</h3>
+        <form method="post">
+          {% csrf_token %}
+          {{ triage_form|crispy }}
+          <button type="submit">Get suggestion</button>
+        </form>
+      </section>
+
+      <section class="analytics-page__panel">
+        <h3>Recommendation</h3>
+        {% if suggestion %}
+          <div class="analytics-page__result">
+            <p><strong>Suggested care path:</strong> {{ suggestion.doctor_type|escape }}</p>
+            <p><strong>Urgency:</strong> {{ suggestion.urgency|escape }}</p>
+            <p>{{ suggestion.message|escape }}</p>
+            <p><strong>Matched keywords:</strong>
+              {% if suggestion.matched_keywords %}
+                {{ suggestion.matched_keywords|join:", "|escape }}
+              {% else %}
+                none
+              {% endif %}
+            </p>
+          </div>
+        {% else %}
+          <p>Submit your symptoms to see a recommendation based on the local triage rules.</p>
+        {% endif %}
+      </section>
+    </div>
+  </section>
+{% endblock %}
