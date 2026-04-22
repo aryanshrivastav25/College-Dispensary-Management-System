@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Receipt — CampusCare{% endblock %}
+{% block body_class %}campuscare-shell--print{% endblock %}
+
+{% block content %}
+  <section class="receipt-page" aria-labelledby="receipt-heading">
+    <header class="receipt-page__header">
+      <div>
+        <p class="receipt-page__eyebrow">Pharmacy receipt</p>
+        <h2 id="receipt-heading">Dispense confirmation</h2>
+      </div>
+      <button type="button" class="receipt-page__button" onclick="window.print()">Print receipt</button>
+    </header>
+
+    <article class="receipt-page__sheet">
+      <div class="receipt-page__brand">
+        <div>
+          <strong>CampusCare Dispensary</strong>
+          <p>Official dispense receipt</p>
+        </div>
+        <span>Record {{ record.pk }}</span>
+      </div>
+
+      <div class="receipt-page__meta">
+        <div>
+          <strong>Receipt code</strong>
+          <p>{{ record.receipt_code }}</p>
+        </div>
+        <div>
+          <strong>Dispensed by</strong>
+          <p>{{ record.pharmacist.user.get_full_name|default:record.pharmacist.user.username|escape }}</p>
+        </div>
+        <div>
+          <strong>Dispensed at</strong>
+          <p>{{ record.dispensed_at|date:"d M Y, g:i A"|escape }}</p>
+        </div>
+      </div>
+
+      <section class="receipt-page__section">
+        <h3>Patient</h3>
+        <p>{{ record.prescription.token.student.user.get_full_name|default:record.prescription.token.student.user.username|escape }}</p>
+      </section>
+
+      <section class="receipt-page__section">
+        <h3>Medicines dispensed</h3>
+        <table class="receipt-page__table">
+          <thead>
+            <tr>
+              <th>Medicine</th>
+              <th>Dosage</th>
+              <th>Quantity</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for medicine in record.prescription.medicines.all %}
+              <tr>
+                <td>{{ medicine.medicine_name|escape }}</td>
+                <td>{{ medicine.dosage_instructions|escape }}</td>
+                <td>{{ medicine.quantity }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+
+      <footer class="receipt-page__footer">
+        <div>
+          <strong>Pharmacist signature</strong>
+          <span></span>
+        </div>
+        <div>
+          <strong>Collected by</strong>
+          <span></span>
+        </div>
+      </footer>
+    </article>
+  </section>
+{% endblock %}

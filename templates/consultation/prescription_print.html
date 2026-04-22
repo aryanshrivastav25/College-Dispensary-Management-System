@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Printable Prescription — CampusCare{% endblock %}
+{% block body_class %}campuscare-shell--print{% endblock %}
+
+{% block content %}
+  <section class="print-page" aria-labelledby="print-heading">
+    <header class="print-page__header">
+      <div>
+        <p class="print-page__eyebrow">Printable prescription</p>
+        <h2 id="print-heading">CampusCare prescription slip</h2>
+      </div>
+      <button type="button" class="print-page__button" onclick="window.print()">Print slip</button>
+    </header>
+
+    <article class="print-page__sheet">
+      <div class="print-page__brand">
+        <div>
+          <strong>CampusCare Dispensary</strong>
+          <p>Official consultation prescription</p>
+        </div>
+        <span>Prescription ID {{ prescription.pk }}</span>
+      </div>
+
+      <div class="print-page__row">
+        <div>
+          <strong>Patient</strong>
+          <p>{{ prescription.token.student.user.get_full_name|default:prescription.token.student.user.username|escape }}</p>
+        </div>
+        <div>
+          <strong>Doctor</strong>
+          <p>{{ prescription.doctor.user.get_full_name|default:prescription.doctor.user.username|escape }}</p>
+        </div>
+        <div>
+          <strong>Date</strong>
+          <p>{{ prescription.created_at|date:"d M Y, g:i A"|escape }}</p>
+        </div>
+      </div>
+
+      <section class="print-page__section">
+        <h3>Symptoms</h3>
+        <p>{{ prescription.symptoms|linebreaksbr }}</p>
+      </section>
+
+      <section class="print-page__section">
+        <h3>Medicines</h3>
+        <table class="print-page__table">
+          <thead>
+            <tr>
+              <th>Medicine</th>
+              <th>Dosage</th>
+              <th>Quantity</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for medicine in prescription.medicines.all %}
+              <tr>
+                <td>{{ medicine.medicine_name|escape }}</td>
+                <td>{{ medicine.dosage_instructions|escape }}</td>
+                <td>{{ medicine.quantity }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+
+      <section class="print-page__section">
+        <h3>Care note</h3>
+        <p>Please follow the prescribed dosage exactly and return to the dispensary if symptoms worsen or new symptoms appear.</p>
+      </section>
+
+      <footer class="print-page__footer">
+        <div>
+          <strong>Doctor signature</strong>
+          <span></span>
+        </div>
+        <div>
+          <strong>Student acknowledgement</strong>
+          <span></span>
+        </div>
+      </footer>
+    </article>
+  </section>
+{% endblock %}

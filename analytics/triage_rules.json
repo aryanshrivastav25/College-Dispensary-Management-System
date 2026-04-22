@@ -1,0 +1,26 @@
+[
+  {
+    "keywords": ["cough", "fever", "cold", "throat"],
+    "doctor_type": "General Medicine",
+    "urgency": "routine",
+    "message": "Respiratory or fever symptoms usually start with a general medicine consultation unless they are rapidly worsening."
+  },
+  {
+    "keywords": ["rash", "allergy", "itching", "sneezing"],
+    "doctor_type": "General Medicine",
+    "urgency": "priority",
+    "message": "Possible allergy symptoms should be checked promptly, especially if they are spreading or affecting breathing."
+  },
+  {
+    "keywords": ["cut", "wound", "bleeding", "sprain"],
+    "doctor_type": "First Aid",
+    "urgency": "urgent",
+    "message": "Fresh injuries should be reviewed quickly so the dispensary team can clean, dress, or stabilise them."
+  },
+  {
+    "keywords": ["stomach", "nausea", "vomiting", "diarrhea"],
+    "doctor_type": "General Medicine",
+    "urgency": "priority",
+    "message": "Digestive complaints can lead to dehydration, so a same-day review is a safer default."
+  }
+]

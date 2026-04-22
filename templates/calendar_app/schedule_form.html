@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Manage Schedule — CampusCare{% endblock %}
+
+{% block content %}
+  <section class="schedule-page" aria-labelledby="schedule-heading">
+    <header class="schedule-page__header">
+      <div>
+        <p class="schedule-page__eyebrow">Admin scheduling</p>
+        <h2 id="schedule-heading">Manage dispensary schedule</h2>
+        <p>Create or update the schedule for a specific date.</p>
+      </div>
+      <a class="schedule-page__back" href="{% url 'calendar:month' %}">View month</a>
+    </header>
+
+    <div class="schedule-page__layout">
+      <section class="schedule-page__panel">
+        <h3>{{ selected_date|date:"d M Y"|escape }}</h3>
+        <form method="post">
+          {% csrf_token %}
+          {{ form|crispy }}
+          <button type="submit">Save schedule</button>
+        </form>
+      </section>
+
+      <aside class="schedule-page__panel schedule-page__panel--aside">
+        <h3>Default day</h3>
+        <p>
+          Open {{ default_schedule_preview.open_time|time:"g:i A"|escape }} to
+          {{ default_schedule_preview.close_time|time:"g:i A"|escape }}
+        </p>
+        <p>{{ default_schedule_preview.note|escape }}</p>
+
+        <h3>Recent updates</h3>
+        {% if recent_schedules %}
+          <ul class="schedule-page__list">
+            {% for schedule in recent_schedules %}
+              <li>
+                <a href="{% url 'calendar:manage' %}?date={{ schedule.date|date:'Y-m-d' }}">
+                  {{ schedule.date|date:"d M Y"|escape }}
+                </a>
+                {% if schedule.is_open %}
+                  <span>Open</span>
+                {% else %}
+                  <span>Closed</span>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No schedule entries have been created yet.</p>
+        {% endif %}
+
+        <div class="schedule-page__note">
+          {% if existing_schedule %}
+            <strong>Current override:</strong>
+            {% if existing_schedule.note %}
+              <p>{{ existing_schedule.note|escape }}</p>
+            {% else %}
+              <p>This date has a custom saved schedule.</p>
+            {% endif %}
+          {% else %}
+            <strong>No custom override yet.</strong>
+            <p>This date is currently using the default day shown above.</p>
+          {% endif %}
+        </div>
+      </aside>
+    </div>
+  </section>
+{% endblock %}

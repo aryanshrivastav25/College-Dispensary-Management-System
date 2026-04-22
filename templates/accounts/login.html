@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Login — CampusCare{% endblock %}
+
+{% block content %}
+  <section class="auth-page" aria-labelledby="login-heading">
+    <h2 id="login-heading">Login</h2>
+    <p>Sign in to access your CampusCare account.</p>
+    <form method="post">
+      {% csrf_token %}
+      {% if next %}
+        <input type="hidden" name="next" value="{{ next|escape }}">
+      {% endif %}
+      {{ form|crispy }}
+      <button type="submit">Login</button>
+    </form>
+
+    
+    <!-- <p>
+      Need an account?
+      <a href="{% url 'accounts:register' %}">Register here</a>.
+    </p> -->
+  </section>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load role_tags %}
+
+{% block title %}Calendar — CampusCare{% endblock %}
+
+{% block content %}
+  <section class="calendar-page" aria-labelledby="calendar-heading">
+    <header class="calendar-page__header">
+      <div>
+        <p class="calendar-page__eyebrow">Dispensary calendar</p>
+        <h2 id="calendar-heading">{{ calendar_title|escape }}</h2>
+        <p>Review published open and closed days for the campus dispensary.</p>
+      </div>
+      {% if_role 'admin' %}
+        <a class="calendar-page__action" href="{% url 'calendar:manage' %}">Manage schedule</a>
+      {% endif_role %}
+    </header>
+
+    <nav class="calendar-page__nav" aria-label="Calendar month navigation">
+      <a href="{% url 'calendar:month' %}?year={{ previous_month.year }}&month={{ previous_month.month }}">Previous month</a>
+      <span>{{ calendar_title|escape }}</span>
+      <a href="{% url 'calendar:month' %}?year={{ next_month.year }}&month={{ next_month.month }}">Next month</a>
+    </nav>
+
+    <div class="calendar-grid" role="table" aria-label="{{ calendar_title|escape }}">
+      {% for weekday_label in weekday_labels %}
+        <div class="calendar-grid__weekday" role="columnheader">{{ weekday_label|escape }}</div>
+      {% endfor %}
+
+      {% for week in weeks %}
+        {% for day in week %}
+          <article class="calendar-grid__day{% if not day.in_current_month %} calendar-grid__day--muted{% endif %}{% if day.is_today %} calendar-grid__day--today{% endif %}" role="cell">
+            <div class="calendar-grid__day-top">
+              <span class="calendar-grid__day-number">{{ day.day_number }}</span>
+              {% if day.schedule.is_open %}
+                {% if day.has_custom_schedule %}
+                  <span class="calendar-grid__status calendar-grid__status--open">Open</span>
+                {% else %}
+                  <span class="calendar-grid__status calendar-grid__status--unset">Default</span>
+                {% endif %}
+              {% else %}
+                <span class="calendar-grid__status calendar-grid__status--closed">Closed</span>
+              {% endif %}
+            </div>
+            {% if day.schedule.is_open %}
+              <p class="calendar-grid__detail">
+                {{ day.schedule.open_time|time:"g:i A"|escape }} to {{ day.schedule.close_time|time:"g:i A"|escape }}
+              </p>
+            {% else %}
+              <p class="calendar-grid__detail">Dispensary closed for this day.</p>
+            {% endif %}
+            {% if day.schedule.note %}
+              <p class="calendar-grid__note">{{ day.schedule.note|escape }}</p>
+            {% endif %}
+            {% if_role 'admin' %}
+              <a class="calendar-grid__manage" href="{% url 'calendar:manage' %}?date={{ day.date|date:'Y-m-d' }}">Edit day</a>
+            {% endif_role %}
+          </article>
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}

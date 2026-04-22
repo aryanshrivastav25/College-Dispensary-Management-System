@@ -1,0 +1,15 @@
+asgiref==3.11.1
+colorama==0.4.6
+crispy-bootstrap5==2026.3
+Django==6.0.3
+django-crispy-forms==2.6
+numpy==2.4.3
+pandas==3.0.1
+pillow==12.1.1
+python-dateutil==2.9.0.post0
+python-decouple==3.8
+qrcode==8.2
+six==1.17.0
+sqlparse==0.5.5
+tzdata==2025.3
+whitenoise==6.12.0

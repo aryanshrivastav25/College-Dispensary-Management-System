@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ page_heading }} — CampusCare{% endblock %}
+
+{% block content %}
+  <section class="inventory-form-page" aria-labelledby="inventory-form-heading">
+    <header class="inventory-form-page__header">
+      <div>
+        <p class="inventory-form-page__eyebrow">Inventory</p>
+        <h2 id="inventory-form-heading">{{ page_heading }}</h2>
+        <p>Manage both the medicine catalog details and its live stock level in one place.</p>
+      </div>
+      <a href="{% url 'inventory:list' %}">Back to inventory</a>
+    </header>
+
+    <form method="post" class="inventory-form-page__form">
+      {% csrf_token %}
+      <section class="inventory-form-page__panel">
+        <h3>Medicine details</h3>
+        {{ medicine_form|crispy }}
+      </section>
+
+      <section class="inventory-form-page__panel">
+        <h3>Stock details</h3>
+        {{ stock_form|crispy }}
+      </section>
+
+      <button type="submit">{% if stock %}Save changes{% else %}Create stock item{% endif %}</button>
+    </form>
+  </section>
+{% endblock %}

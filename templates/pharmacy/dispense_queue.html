@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Pharmacy Queue — CampusCare{% endblock %}
+
+{% block content %}
+  <section class="pharmacy-page" aria-labelledby="pharmacy-heading">
+    <header class="pharmacy-page__header">
+      <div>
+        <p class="pharmacy-page__eyebrow">Pharmacy</p>
+        <h2 id="pharmacy-heading">Dispense queue</h2>
+        <p>Review completed consultations, check quota eligibility, and hand off medicines with a receipt.</p>
+      </div>
+    </header>
+
+    <div class="pharmacy-page__layout">
+      <section class="pharmacy-page__panel">
+        <h3>Pending prescriptions</h3>
+        {% if pending_prescriptions %}
+          <ul class="pharmacy-page__queue">
+            {% for prescription in pending_prescriptions %}
+              <li class="{% if selected_prescription and selected_prescription.pk == prescription.pk %}pharmacy-page__queue-item--active{% endif %}">
+                <div>
+                  <strong>{{ prescription.token.student.user.get_full_name|default:prescription.token.student.user.username|escape }}</strong>
+                  <p>{{ prescription.doctor.user.get_full_name|default:prescription.doctor.user.username|escape }}</p>
+                  <p>{{ prescription.token.slot.title|escape }}</p>
+                  <p>{{ prescription.created_at|date:"d M Y, g:i A"|escape }}</p>
+                </div>
+                <a href="{% url 'pharmacy:dispense' prescription.pk %}">
+                  {% if request.user.profile.role == 'pharmacist' %}Dispense now{% else %}Review{% endif %}
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No prescriptions are waiting for dispensing right now.</p>
+        {% endif %}
+      </section>
+
+      <section class="pharmacy-page__panel">
+        {% if selected_prescription %}
+          <div class="pharmacy-page__summary">
+            <h3>Prescription review</h3>
+            <p><strong>Token:</strong> {{ selected_prescription.token.token_code }}</p>
+            <p><strong>Student:</strong> {{ selected_prescription.token.student.user.get_full_name|default:selected_prescription.token.student.user.username|escape }}</p>
+            <p><strong>Roll No:</strong> {{ selected_prescription.token.student.roll_number }}</p>
+            <p><strong>Doctor:</strong> {{ selected_prescription.doctor.user.get_full_name|default:selected_prescription.doctor.user.username|escape }}</p>
+            <p><strong>Symptoms:</strong> {{ selected_prescription.symptoms|escape }}</p>
+          </div>
+
+          <section class="pharmacy-page__quota">
+            <h4>Monthly quota check</h4>
+            <p>Used: {{ quota.used_quota }} / {{ quota.monthly_limit }}</p>
+            <p>Remaining: {{ quota.remaining_quota }}</p>
+            {% if quota.eligible %}
+              <p class="pharmacy-page__quota-status pharmacy-page__quota-status--ok">Student is within the monthly medicine quota.</p>
+            {% else %}
+              <p class="pharmacy-page__quota-status pharmacy-page__quota-status--blocked">Student has reached the monthly medicine quota.</p>
+            {% endif %}
+          </section>
+
+          <section class="pharmacy-page__medicines">
+            <h4>Medicines to hand off</h4>
+            <ul>
+              {% for medicine in selected_prescription.medicines.all %}
+                <li>
+                  <strong>{{ medicine.medicine_name|escape }}</strong>
+                  <span>{{ medicine.dosage_instructions|escape }}</span>
+                  <span>Qty {{ medicine.quantity }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          </section>
+
+          {% if can_dispense %}
+            <form method="post" class="pharmacy-page__form">
+              {% csrf_token %}
+              {{ dispense_form|crispy }}
+              <button type="submit">Complete dispensing</button>
+            </form>
+          {% endif %}
+        {% else %}
+          <div class="pharmacy-page__empty">
+            <h3>Select a prescription</h3>
+            <p>Choose a queue item to review its medicines and complete the handoff.</p>
+          </div>
+        {% endif %}
+      </section>
+    </div>
+  </section>
+{% endblock %}

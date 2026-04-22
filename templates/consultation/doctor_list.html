@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Doctors — CampusCare{% endblock %}
+
+{% block content %}
+  <section class="consultation-page" aria-labelledby="doctor-list-heading">
+    <header class="consultation-page__header">
+      <div>
+        <p class="consultation-page__eyebrow">Consultation</p>
+        <h2 id="doctor-list-heading">Doctor availability</h2>
+        <p>Check which doctors are available and review the current consultation queue.</p>
+      </div>
+      {% if current_doctor_profile %}
+        <form method="post" action="{% url 'consultation:toggle_availability' %}">
+          {% csrf_token %}
+          <button type="submit" class="consultation-page__action">
+            {% if current_doctor_profile.is_available %}Mark unavailable{% else %}Mark available{% endif %}
+          </button>
+        </form>
+      {% endif %}
+    </header>
+
+    <div class="consultation-page__layout">
+      <section class="consultation-page__panel">
+        <h3>Doctors</h3>
+        <div class="doctor-grid">
+          {% for doctor_profile in doctor_profiles %}
+            <article class="doctor-card">
+              <div class="doctor-card__top">
+                <div>
+                  <h4>{{ doctor_profile.user.get_full_name|default:doctor_profile.user.username|escape }}</h4>
+                  <p>{{ doctor_profile.specialization|escape }}</p>
+                </div>
+                {% if doctor_profile.is_available %}
+                  <span class="doctor-card__status doctor-card__status--open">Available</span>
+                {% else %}
+                  <span class="doctor-card__status doctor-card__status--closed">Unavailable</span>
+                {% endif %}
+              </div>
+            </article>
+          {% empty %}
+            <p>No doctor profiles are available yet.</p>
+          {% endfor %}
+        </div>
+      </section>
+
+      {% if can_view_queue %}
+        <aside class="consultation-page__panel">
+          <h3>Waiting queue</h3>
+          {% if waiting_tokens %}
+            <ul class="consultation-page__queue">
+              {% for token in waiting_tokens %}
+                <li>
+                  <div>
+                    <strong>{{ token.student.user.get_full_name|default:token.student.user.username|escape }}</strong>
+                    <p>{{ token.slot.title|escape }} on {{ token.slot.date|date:"d M Y"|escape }}</p>
+                  </div>
+                  {% if request.user.profile.role == 'doctor' %}
+                    <a href="{% url 'consultation:prescribe' token.pk %}">Start consultation</a>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p>No students are waiting right now.</p>
+          {% endif %}
+        </aside>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}
